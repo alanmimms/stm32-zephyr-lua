@@ -1,0 +1,35 @@
+/ {
+    chosen {
+        zephyr,console = &cdc_acm_uart0;
+        zephyr,shell-uart = &cdc_acm_uart0;
+    };
+};
+
+&zephyr_udc0 {
+    cdc_acm_uart0: cdc_acm_uart0 {
+        compatible = "zephyr,cdc-acm-uart";
+    };
+};
+
+/* Target the flash controller's partition list directly */
+&flash0 {
+    /delete-node/ partitions;
+
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        /* 1MB for the Application */
+        slot0_partition: partition@0 {
+            label = "image-0";
+            reg = <0x00000000 DT_SIZE_K(1024)>;
+        };
+
+        /* 1MB for LittleFS */
+        storage_partition: partition@100000 {
+            label = "storage";
+            reg = <0x00100000 DT_SIZE_K(1024)>;
+        };
+    };
+};
