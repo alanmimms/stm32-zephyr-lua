@@ -8,6 +8,9 @@
 
 #include <zephyr/net/socket.h>
 #include <zephyr/fs/fs.h>
+#include <time.h>
+#include <zephyr/net/ethernet.h>
+#include <zephyr/drivers/ptp_clock.h>
 
 /* Lua Includes */
 #include <lua.h>
@@ -75,6 +78,41 @@ static int cmd_lua(const struct shell *sh, size_t argc, char **argv)
 
 
 SHELL_CMD_REGISTER(lua, NULL, "Run a Lua string", cmd_lua);
+
+
+/* Background thread to sync the hardware PTP clock to the OS clock */
+void ptp_to_sys_thread(void) {
+    /* Wait a few seconds on boot to let gPTP negotiate */
+    k_sleep(K_SECONDS(5)); 
+
+    struct net_if *iface = net_if_get_default();
+    const struct device *ptp_dev = net_eth_get_ptp_clock(iface);
+    
+    if (!ptp_dev) {
+        printk("Failed to find PTP device for clock sync.\n");
+        return;
+    }
+
+    while (1) {
+        struct net_ptp_time ptp_time;
+        /* Read the hardware MAC */
+        if (ptp_clock_get(ptp_dev, &ptp_time) == 0) {
+            
+            /* Format it for the OS */
+            struct timespec ts;
+            ts.tv_sec = ptp_time.second;
+            ts.tv_nsec = ptp_time.nanosecond;
+            
+            /* Overwrite the Zephyr system time */
+            clock_settime(CLOCK_REALTIME, &ts);
+        }
+        
+        /* Go to sleep for 1 second, then do it again */
+        k_sleep(K_SECONDS(1)); 
+    }
+}
+/* Tell Zephyr to run this continuously in the background */
+K_THREAD_DEFINE(ptp_sys_sync_tid, 1024, ptp_to_sys_thread, NULL, NULL, NULL, 7, 0, 0);
 
 
 static int luaPanic(lua_State *L) {
