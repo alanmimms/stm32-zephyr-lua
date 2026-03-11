@@ -28,6 +28,14 @@ or
 to run the upload. There are also shell `fs` commands to let you move
 and copy and cat files.
 
+If you want the date/time to be correct on the STM32, gPTP can do
+this. I did
+
+	sudo apt install linuxptp
+	sudo ptp4l -i enp6s0 -m -f gptp.cfg
+	
+and rebooted the STM32 board. `date get` now shows UTC correct time and date.
+
 Have fun!
 Alan Mimms
 WB7NAB
