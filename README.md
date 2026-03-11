@@ -14,7 +14,7 @@ _ipaddr_ by typing
 
 	net iface
 	
-on the serial console. There is also "help" to show you all the little
+on the serial console. There is also `help` to show you all the little
 shell can do.
 
 After you have uploaded a file you can type
